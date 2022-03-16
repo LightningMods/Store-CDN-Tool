@@ -5,6 +5,7 @@
 ## Tool directions
 
 **IMPORTENT**
+
 **SQL Layout below for advanced users**
 
 - Follow [The PS4 Store Github](https://github.com/LightningMods/PS4-Store/releases) For New Updates
