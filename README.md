@@ -1,4 +1,4 @@
-# Store-CDN-Tool
+# Store-CDN-Tool (32bit systems not supported)
 
 ## Licensed Under GPLv3
 
@@ -20,7 +20,6 @@
 
 - [PS4_TOOLs](https://github.com/xXxTheDarkprogramerxXx/PS4_Tools/tree/master/PS4_Tools) 
 - [Liborbispkg](https://github.com/maxton/LibOrbisPkg) 
-- 
 ## Refs
 - [Google](google.com) 
 

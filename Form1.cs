@@ -76,7 +76,18 @@ namespace DesktopApp1
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            sql_con.Open();
+            if (!File.Exists("store.db"))
+            {
+                SQLiteConnection.CreateFile("store.db");
+                sql_con.Open();
+                string create_db = "CREATE TABLE homebrews ( pid int UNSIGNED NOT NULL,id varchar(255) ,name varchar(255) ,desc varchar(255) ,image varchar(255) ,package varchar(255) ,version varchar(255) ,picpath varchar(255) ,desc_1 varchar(255) ,desc_2 varchar(255) ,ReviewStars varchar(255) ,Size varchar(255) ,Author varchar(255) ,apptype varchar(255) ,pv varchar(255) ,main_icon_path varchar(255) ,main_menu_pic varchar(255) ,releaseddate date DEFAULT NULL,number_downloads int NOT NULL);";
+                SQLiteCommand command = new SQLiteCommand(create_db, sql_con);
+                command.ExecuteNonQuery();
+            }
+            else
+                sql_con.Open();
+
+
             foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
             {
                 if (ni.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 || ni.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
@@ -742,34 +753,7 @@ namespace DesktopApp1
         private void clearDatabase()
         {
             try
-            {
-                if (!File.Exists("store.db"))
-                {
-                    SQLiteConnection.CreateFile("store.db");
-
-                    //SQLiteConnection sql_con = new SQLiteConnection("Data Source=store.db;");
-                    
-
-                    string create_db = "CREATE TABLE homebrews ( pid int UNSIGNED NOT NULL,id varchar(255) ,name varchar(255) ,desc varchar(255) ,image varchar(255) ,package varchar(255) ,version varchar(255) ,picpath varchar(255) ,desc_1 varchar(255) ,desc_2 varchar(255) ,ReviewStars varchar(255) ,Size varchar(255) ,Author varchar(255) ,apptype varchar(255) ,pv varchar(255) ,main_icon_path varchar(255) ,main_menu_pic varchar(255) ,releaseddate date DEFAULT NULL,number_downloads int NOT NULL)";
-
-
-                    SQLiteCommand command = new SQLiteCommand(create_db, sql_con);
-                    command.ExecuteNonQuery();
-                    //sql_con.Close();
-                    // SQLiteConnection.ClearPool(sql_con);
-
-                    //sql_con.ClearCachedSettings();
-                    //sql_con.ReleaseMemory();
-                    //sql_con.Dispose();
-
-                    //SQLiteConnection.ClearAllPools();
-
-                    //GC.Collect();
-                    //GC.WaitForPendingFinalizers();
-                }
-                else
-                {
-                    
+            { 
                     SQLiteCommand sql_cmd = sql_con.CreateCommand();
                     sql_cmd.CommandText = "DELETE FROM homebrews;";
                     sql_cmd.ExecuteNonQuery();
@@ -784,7 +768,7 @@ namespace DesktopApp1
 
                     //GC.Collect();
                     //GC.WaitForPendingFinalizers();
-                }
+                
             }
             catch (Exception ee)
             {
