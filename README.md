@@ -1,9 +1,8 @@
 # Store-CDN-Tool (32bit systems not supported and Admin required)
 
-![Tool](https://github.com/LightningMods/Store-CDN-Tool/tool.png?raw=true "CDN Tool")
-
-
 ## Licensed Under GPLv3
+
+![Tool](https://github.com/LightningMods/Store-CDN-Tool/blob/main/tool.png?raw=true "CDN Tool")
 
 ## Tool directions
 
@@ -17,6 +16,7 @@
 - In the app go to Settings -> CDN and replace the CDN Url with `http://YOUR_LOCAL_PC_IP/` YOUR_LOCAL_PC_IP Is your PC LOCAL IP address and restart the app
 - Add PKGs to the Database using one of the tools options
 - Copy the PKG(s) you added to the database to the Tools "pkgs" folder and press "Start webserver" then relaunch the Store App
+
 
 ## Libaries
 
