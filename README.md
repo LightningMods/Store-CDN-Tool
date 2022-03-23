@@ -1,4 +1,7 @@
-# Store-CDN-Tool (32bit systems not supported)
+# Store-CDN-Tool (32bit systems not supported and Admin required)
+
+![Tool](https://github.com/LightningMods/Store-CDN-Tool/tool.png?raw=true "CDN Tool")
+
 
 ## Licensed Under GPLv3
 
