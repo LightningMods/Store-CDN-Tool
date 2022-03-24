@@ -32,7 +32,7 @@ namespace DesktopApp1
 
         private TcpListener myListener;
         SQLiteConnection sql_con = new SQLiteConnection("Data Source=store.db;");
-        private Ini.IniFile ini = new Ini.IniFile(Application.StartupPath + @"\settings.ini"); 
+        private Ini.IniFile ini = new Ini.IniFile(Application.StartupPath + @"\settings.ini");
 
         public Form1()
         {
@@ -186,7 +186,7 @@ namespace DesktopApp1
             opendialog.Filter = "PS4 Package File (*.pkg) | *.pkg";
             if (opendialog.ShowDialog() == DialogResult.OK)
             {
- 
+
 
                 //Adding PS4 Tools so we can get an image pkg information ext
                 //xDPx
@@ -247,20 +247,20 @@ namespace DesktopApp1
                         MessageBox.Show("App: " + pkgfile.Param.Title + ", has been successfully Added to the Database\n\nPlease copy the PKG to the pkgs folder in this tools root folder");
                     }
 
-                    
+
                 }
                 catch (Exception ee)
                 {
                     MessageBox.Show("Invaild Package!");
                 }
-                
+
 
             }
         }
 
         private void button1_Click_1(object sender, EventArgs e)
         {
-            
+
         }
 
         public string GetTheDefaultFileName(string sLocalDirectory)
@@ -514,11 +514,11 @@ namespace DesktopApp1
 
                     Console.WriteLine("Directory Requested : " + sDirName);
                     //If the physical directory does not exists then
-  
+
                     // dispaly the error message  
                     Console.WriteLine("dir: " + sDirName);
 
-      
+
                     if (sRequestedFile.Contains("api.php?page="))
                     {
                         string file_numb = sRequestedFile.Remove(0, 13);
@@ -603,7 +603,7 @@ namespace DesktopApp1
                         FileInfo fi = new FileInfo(sPhysicalFilePath);
                         int bytesRead = 0;
                         FileStream inputTempFile = new FileStream(sPhysicalFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                        byte[] Array_buffer = new byte[80*1024*1024];
+                        byte[] Array_buffer = new byte[80 * 1024 * 1024];
                         SendHeader(sHttpVersion, "application/octet-stream", fi.Length, " 200 OK", ref mySocket);
                         while ((bytesRead = inputTempFile.Read(Array_buffer, 0, 80 * 1024 * 1024)) > 0)
                         {
@@ -618,7 +618,7 @@ namespace DesktopApp1
                 }
             }
 
-            if(!is_running && mySocket != null)
+            if (!is_running && mySocket != null)
                 mySocket.Close();
         }
         //Thread th = null;
@@ -627,13 +627,13 @@ namespace DesktopApp1
 
         private void metroButton1_Click(object sender, EventArgs e)
         {
-           
-            
+
+
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            
+
         }
 
         private void lblProgress_Click(object sender, EventArgs e)
@@ -681,39 +681,39 @@ namespace DesktopApp1
 
         private void metroButton3_Click_1(object sender, EventArgs e)
         {
-            
-           
-            
+
+
+
         }
 
         private void button2_Click_1(object sender, EventArgs e)
         {
-            
+
         }
 
         private void button1_Click_2(object sender, EventArgs e)
         {
-            
+
         }
 
         private void simpleButton1_Click(object sender, EventArgs e)
         {
-            
+
         }
 
         private void groupControl1_DragDrop(object sender, DragEventArgs e)
         {
-            
+
         }
 
         private void groupControl1_DragEnter(object sender, DragEventArgs e)
         {
-            
+
         }
 
         private void addPkgs_CheckedChanged(object sender, EventArgs e)
         {
-            
+
         }
 
         private void clearDB_CheckedChanged(object sender, EventArgs e)
@@ -747,28 +747,28 @@ namespace DesktopApp1
 
         private void addPkgs_Click(object sender, EventArgs e)
         {
-            
+
         }
 
         private void clearDatabase()
         {
             try
-            { 
-                    SQLiteCommand sql_cmd = sql_con.CreateCommand();
-                    sql_cmd.CommandText = "DELETE FROM homebrews;";
-                    sql_cmd.ExecuteNonQuery();
-                    //sql_con.Close();
-                    //SQLiteConnection.ClearPool(sql_con);
+            {
+                SQLiteCommand sql_cmd = sql_con.CreateCommand();
+                sql_cmd.CommandText = "DELETE FROM homebrews;";
+                sql_cmd.ExecuteNonQuery();
+                //sql_con.Close();
+                //SQLiteConnection.ClearPool(sql_con);
 
-                    //sql_con.ClearCachedSettings();
-                    //sql_con.ReleaseMemory();
-                    //sql_con.Dispose();
+                //sql_con.ClearCachedSettings();
+                //sql_con.ReleaseMemory();
+                //sql_con.Dispose();
 
-                    //SQLiteConnection.ClearAllPools();
+                //SQLiteConnection.ClearAllPools();
 
-                    //GC.Collect();
-                    //GC.WaitForPendingFinalizers();
-                
+                //GC.Collect();
+                //GC.WaitForPendingFinalizers();
+
             }
             catch (Exception ee)
             {
@@ -778,7 +778,7 @@ namespace DesktopApp1
 
         private void metroButton1_CheckedChanged(object sender, EventArgs e)
         {
-            
+
 
         }
 
@@ -812,7 +812,16 @@ namespace DesktopApp1
         {
             if (pkgText.Text != "" && pkgText.Text != null && pkgText.Text != string.Empty && metroTextBox1.Text != "" && metroTextBox1.Text != null && metroTextBox1.Text != string.Empty)
             {
+
+                //Multiple Threads to Download more than one pkg file 
                 Thread th = new Thread(new ThreadStart(StartListen));
+
+                Thread th2 = new Thread(new ThreadStart(StartListen));
+
+                Thread th3 = new Thread(new ThreadStart(StartListen));
+
+                Thread th4 = new Thread(new ThreadStart(StartListen));
+
                 serverRoot = Directory.GetDirectoryRoot(pkgText.Text);
                 if (!is_running)
                 {
@@ -827,7 +836,13 @@ namespace DesktopApp1
                         //start the thread which calls the method 'StartListen'    
                         is_running = true;
                         //Task.Factory.StartNew(StartListen);
+
+                        //Multi Threading Start
                         th.Start();
+                        th2.Start();
+                        th3.Start();
+                        th4.Start();
+
                         lblProgress.Text = "                           Running...";
                         lblProgress.ForeColor = Color.Lime;
                     }
