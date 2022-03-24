@@ -63,7 +63,7 @@ number_downloads = Number of downloads for this App (unused)
 
 IF the settings file is loaded from USB all settings will be saved to the same USB
 
-ONLY 1 apps can download at once using this tool, you can do up to 4 if you have more threads
+ONLY 4 apps can download at once using this tool, you can do up to 4 if you have more threads
 
 ## Official Discord server
 
