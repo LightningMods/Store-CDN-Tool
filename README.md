@@ -11,8 +11,8 @@
 **SQL Layout below for advanced users**
 
 - Follow [The PS4 Store Github](https://github.com/LightningMods/PS4-Store/releases) For New Updates
-- Make a folder named "update" in tools directory
-- Download the [latest Store Update here](https://github.com/LightningMods/PS4-Store/releases) place the following files in your tools `update` folder` homebrew.elf` , `homebrew.elf.sig` and `remote.md5` 
+- Make a folder named "update" in the tools directory
+- Download the [latest Store Update here](https://github.com/LightningMods/PS4-Store/releases) place the following files in your tools `update` folder `homebrew.elf` , `homebrew.elf.sig` and `remote.md5` 
 - You can download The [Package here (PKG-Zone)](https://pkg-zone.com/Store-R2.pkg), and Install then run it **ONLY Download from this Site**
 - In the app go to Settings -> CDN and replace the CDN Url with `http://YOUR_LOCAL_PC_IP/` YOUR_LOCAL_PC_IP Is your PC LOCAL IP address and restart the app
 - Add PKGs to the Database using one of the tools options
