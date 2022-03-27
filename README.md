@@ -4,7 +4,7 @@
 
 ![Tool](https://github.com/LightningMods/Store-CDN-Tool/blob/main/tool.png?raw=true "CDN Tool")
 
-## Tool directions
+## Tool directions (uses port 80)
 
 **IMPORTENT**
 
