@@ -22,65 +22,60 @@ using PS4_Tools.LibOrbis;
 using PS4_Tools.Util;
 using System.Drawing.Imaging;
 using System.Net.NetworkInformation;
+using Microsoft.Win32;
+using IWshRuntimeLibrary;
 
-/*Copyright Darksoftware (c) 2019*/
+/*Copyright Darksoftware (c) 2019-2022*/
+/* LICENSED UNDER GPLv3              */
 
-namespace DesktopApp1
+namespace Store_CDN_Server
 {
     public partial class Form1 : System.Windows.Forms.Form
     {
 
         private TcpListener myListener;
-        SQLiteConnection sql_con = new SQLiteConnection("Data Source=store.db;");
-        private Ini.IniFile ini = new Ini.IniFile(Application.StartupPath + @"\settings.ini");
+        SQLiteConnection sql_con;
+        string serverRoot = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        private Ini.IniFile ini;
+        string drive;
+
+        bool isautostart = false;
+        Thread th, th2, th3, th4;
 
         public Form1()
         {
             InitializeComponent();
+            ini = new Ini.IniFile(serverRoot + @"\settings.ini");
             groupControl1.AllowDrop = true;
             metroTextBox1.Text = Properties.Settings.Default.IP;
+            sql_con = new SQLiteConnection("Data Source=" + serverRoot + @"\store.db;");
+            Console.WriteLine("INI: " + serverRoot + @"\settings.ini" + " ROOT: " + serverRoot);
 
         }
 
-        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private string apptype_info(PS4_Tools.PKG.SceneRelated.PKGType type)
         {
+            switch (type)
+            {
+                case PS4_Tools.PKG.SceneRelated.PKGType.Game:
+                    return "Game";
+                case PS4_Tools.PKG.SceneRelated.PKGType.App:
+                    return "App";
+                case PS4_Tools.PKG.SceneRelated.PKGType.Patch:
+                    return "Patch";
+                case PS4_Tools.PKG.SceneRelated.PKGType.Addon_Theme:
+                    return "Theme";
+            }
 
-
+            return "Unknown";
         }
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void helloWorldLabel_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
-        {
-
-        }
-
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
-        {
-
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
-            if (!File.Exists("store.db"))
+            if (!System.IO.File.Exists(serverRoot + "/store.db"))
             {
-                SQLiteConnection.CreateFile("store.db");
+                SQLiteConnection.CreateFile(serverRoot + "/store.db");
                 sql_con.Open();
-                string create_db = "CREATE TABLE homebrews ( pid int UNSIGNED NOT NULL,id varchar(255) ,name varchar(255) ,desc varchar(255) ,image varchar(255) ,package varchar(255) ,version varchar(255) ,picpath varchar(255) ,desc_1 varchar(255) ,desc_2 varchar(255) ,ReviewStars varchar(255) ,Size varchar(255) ,Author varchar(255) ,apptype varchar(255) ,pv varchar(255) ,main_icon_path varchar(255) ,main_menu_pic varchar(255) ,releaseddate date DEFAULT NULL,number_downloads int NOT NULL);";
+                string create_db = "CREATE TABLE homebrews ( pid int UNSIGNED NOT NULL,id varchar(255), name varchar(255), desc varchar(255), image varchar(255), package varchar(255), version varchar(255) ,picpath varchar(255) ,desc_1 varchar(255) ,desc_2 varchar(255) ,ReviewStars varchar(255) ,Size varchar(255) ,Author varchar(255) ,apptype varchar(255) ,pv varchar(255) ,main_icon_path varchar(255) ,main_menu_pic varchar(255) ,releaseddate date DEFAULT NULL,number_downloads int NOT NULL);";
                 SQLiteCommand command = new SQLiteCommand(create_db, sql_con);
                 command.ExecuteNonQuery();
             }
@@ -109,6 +104,30 @@ namespace DesktopApp1
                 pkgText.Text = ini.IniReadValue("network", "pkgPath");
             }
             catch (Exception) { }
+
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+            if (rk != null)
+            {
+                try
+                {
+                    string value = (String)rk.GetValue("Store CDN Server");
+                    if (!string.IsNullOrEmpty(value))
+                        isautostart = true;
+                    else
+                        Console.WriteLine("Reg key not installed...");
+
+                }
+                catch
+                {
+                    Console.WriteLine("Reg key not installed...");
+                }
+            }
+
+            button1.Text = isautostart ? "Disable" : "Enable";
+            button1.ForeColor = isautostart ? Color.Red : Color.Green;
+            if (isautostart)
+                button3_Click(sender, e);
+
         }
 
 
@@ -125,28 +144,13 @@ namespace DesktopApp1
 
         public int count_rows()
         {
-            //SQLiteConnection liteCon = new SQLiteConnection("Data Source=store.db;");
-            //liteCon.Open();
-
             string query = "SELECT COUNT(*) FROM homebrews";
-            int sizeOfDR = 0;
             List<string> liteEntries = new List<string>();
 
             var cmd = new SQLiteCommand(query, sql_con);
 
             object result = cmd.ExecuteScalar();
             int nTables = Convert.ToInt32(result);
-            //sql_con.Close();
-            //SQLiteConnection.ClearPool(sql_con);
-
-            //sql_con.ClearCachedSettings();
-            //sql_con.ReleaseMemory();
-            //sql_con.Dispose();
-
-            //SQLiteConnection.ClearAllPools();
-            //
-            //GC.Collect();
-            //GC.WaitForPendingFinalizers();
             return nTables;
         }
 
@@ -174,206 +178,6 @@ namespace DesktopApp1
             }
             catch (Exception) { } //No Image
 
-        }
-        private void metroButton2_Click(object sender, EventArgs e)
-        {
-
-            OpenFileDialog opendialog = new OpenFileDialog();
-            opendialog.CheckFileExists = true;
-            opendialog.Multiselect = true;
-            //opendialog.AddExtension 
-            opendialog.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-            opendialog.Filter = "PS4 Package File (*.pkg) | *.pkg";
-            if (opendialog.ShowDialog() == DialogResult.OK)
-            {
-
-
-                //Adding PS4 Tools so we can get an image pkg information ext
-                //xDPx
-                try
-                {
-                    foreach (string pkgName in opendialog.FileNames)
-                    {
-                        var pkgfile = PS4_Tools.PKG.SceneRelated.Read_PKG(pkgName);
-                        pictureBox1.Image = BytesToBitmap(pkgfile.Image);
-
-                        label9.Text = pkgfile.PS4_Title;
-                        label10.Text = pkgfile.Param.TitleID;
-                        label11.Text = calcsize(pkgName);
-                        label12.Text = "storedata/ " + pkgfile.Param.TitleID + ".png";
-                        label13.Text = pkgfile.Param.APP_VER;
-                        label14.Text = pkgfile.Param.PlaystationVersion.ToString();
-
-
-                        if (!Directory.Exists("storedata"))
-                            Directory.CreateDirectory("storedata");
-
-
-                        if (!Directory.Exists("pkgs"))
-                            Directory.CreateDirectory("pkgs");
-
-                        SavePic(BytesToBitmap(pkgfile.Image), "storedata/" + pkgfile.Param.TitleID + ".png");
-
-                        //start listing on the given port  
-                        int rc = count_rows() + 1;
-
-                        SQLiteConnection sql_con = new SQLiteConnection("Data Source=store.db;");
-
-                        sql_con.Open();
-                        SQLiteCommand sql_cmd = sql_con.CreateCommand();
-                        sql_cmd.CommandText = "INSERT INTO homebrews (pid, id, name, desc, image, package, version, picpath, desc_1, desc_2, ReviewStars, Size, Author, apptype, pv, main_icon_path, main_menu_pic, releaseddate,number_downloads) VALUES(@pid, @id, @name, @desc, @image, @package, @version, @picpath, @desc_1, @desc_2, @ReviewStars, @Size, @Author, @apptype, @pv, @main_icon_path, @main_menu_pic, @releaseddate, @number_downloads);";
-                        sql_cmd.Parameters.AddWithValue("@pid", rc.ToString());
-                        sql_cmd.Parameters.AddWithValue("@id", pkgfile.Param.TitleID);
-                        sql_cmd.Parameters.AddWithValue("@name", pkgfile.PS4_Title);
-                        sql_cmd.Parameters.AddWithValue("@desc", "PKG Added via Store CDN tool");
-                        sql_cmd.Parameters.AddWithValue("@image", "http://" + metroTextBox1.Text + "/storedata/" + pkgfile.Param.TitleID + ".png");
-                        sql_cmd.Parameters.AddWithValue("@package", "http://" + metroTextBox1.Text + "/pkgs/" + Path.GetFileName(pkgName));
-                        sql_cmd.Parameters.AddWithValue("@version", pkgfile.Param.APP_VER);
-                        sql_cmd.Parameters.AddWithValue("@picpath", "/user/app/NPXS39041/storedata/" + pkgfile.Param.TitleID + ".png");
-                        sql_cmd.Parameters.AddWithValue("@desc_1", "");
-                        sql_cmd.Parameters.AddWithValue("@desc_2", "");
-                        sql_cmd.Parameters.AddWithValue("@ReviewStars", "0/5");
-                        sql_cmd.Parameters.AddWithValue("@Size", calcsize(pkgName));
-                        sql_cmd.Parameters.AddWithValue("@Author", "Store Tool");
-                        sql_cmd.Parameters.AddWithValue("@apptype", "HB Game");
-                        sql_cmd.Parameters.AddWithValue("@pv", pkgfile.Param.PlaystationVersion);
-                        sql_cmd.Parameters.AddWithValue("@main_icon_path", "http://" + metroTextBox1.Text + "/storedata/" + pkgfile.Param.TitleID + ".png");
-                        sql_cmd.Parameters.AddWithValue("@main_menu_pic", "/user/app/NPXS39041/storedata/" + pkgfile.Param.TitleID + ".png");
-                        sql_cmd.Parameters.AddWithValue("@releaseddate", DateTime.Now.ToString());
-                        sql_cmd.Parameters.AddWithValue("@number_downloads", "0");
-                        sql_cmd.ExecuteNonQuery();
-                        //main_icon_path
-                        sql_con.Close();
-                        MessageBox.Show("App: " + pkgfile.Param.Title + ", has been successfully Added to the Database\n\nPlease copy the PKG to the pkgs folder in this tools root folder");
-                    }
-
-
-                }
-                catch (Exception ee)
-                {
-                    MessageBox.Show("Invaild Package!");
-                }
-
-
-            }
-        }
-
-        private void button1_Click_1(object sender, EventArgs e)
-        {
-
-        }
-
-        public string GetTheDefaultFileName(string sLocalDirectory)
-        {
-            StreamReader sr;
-            String sLine = "";
-            try
-            {
-                //Open the default.dat to find out the list  
-                // of default file  
-                sr = new StreamReader("data/Default.Dat");
-                while ((sLine = sr.ReadLine()) != null)
-                {
-                    //Look for the default file in the web server root folder  
-                    if (File.Exists(sLocalDirectory + sLine) == true)
-                        break;
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("An Exception Occurred : " + e.ToString());
-            }
-            if (File.Exists(sLocalDirectory + sLine) == true)
-                return sLine;
-            else
-                return "";
-        }
-
-        public string GetLocalPath(string sMyWebServerRoot, string sDirName)
-        {
-            StreamReader sr;
-            String sLine = "";
-            String sVirtualDir = "";
-            String sRealDir = "";
-            int iStartPos = 0;
-            //Remove extra spaces  
-            sDirName.Trim();
-            // Convert to lowercase  
-            sMyWebServerRoot = sMyWebServerRoot.ToLower();
-            // Convert to lowercase  
-            sDirName = sDirName.ToLower();
-            try
-            {
-                //Open the Vdirs.dat to find out the list virtual directories  
-                sr = new StreamReader("data/VDirs.Dat");
-                while ((sLine = sr.ReadLine()) != null)
-                {
-                    //Remove extra Spaces  
-                    sLine.Trim();
-                    if (sLine.Length > 0)
-                    {
-                        //find the separator  
-                        iStartPos = sLine.IndexOf(";");
-                        // Convert to lowercase  
-                        sLine = sLine.ToLower();
-                        sVirtualDir = sLine.Substring(0, iStartPos);
-                        sRealDir = sLine.Substring(iStartPos + 1);
-                        if (sVirtualDir == sDirName)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("An Exception Occurred : " + e.ToString());
-            }
-            if (sVirtualDir == sDirName)
-                return sRealDir;
-            else
-                return "";
-        }
-
-        public string GetMimeType(string sRequestedFile)
-        {
-            StreamReader sr;
-            String sLine = "";
-            String sMimeType = "";
-            String sFileExt = "";
-            String sMimeExt = "";
-            // Convert to lowercase  
-            sRequestedFile = sRequestedFile.ToLower();
-            int iStartPos = sRequestedFile.IndexOf(".");
-            sFileExt = sRequestedFile.Substring(iStartPos);
-            try
-            {
-                //Open the Vdirs.dat to find out the list virtual directories  
-                sr = new StreamReader("data/Mime.Dat");
-                while ((sLine = sr.ReadLine()) != null)
-                {
-                    sLine.Trim();
-                    if (sLine.Length > 0)
-                    {
-                        //find the separator  
-                        iStartPos = sLine.IndexOf(";");
-                        // Convert to lower case  
-                        sLine = sLine.ToLower();
-                        sMimeExt = sLine.Substring(0, iStartPos);
-                        sMimeType = sLine.Substring(iStartPos + 1);
-                        if (sMimeExt == sFileExt)
-                            break;
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("An Exception Occurred : " + e.ToString());
-            }
-            if (sMimeExt == sFileExt)
-                return sMimeType;
-            else
-                return "";
         }
 
         public void SendToBrowser(String sData, ref Socket mySocket)
@@ -408,14 +212,6 @@ namespace DesktopApp1
                 var hashResult = md5.ComputeHash(fs);
                 fs.Close();
                 return BitConverter.ToString(hashResult).Replace("-", "").ToLowerInvariant();
-
-
-                //using (FileStream stream = File.OpenRead(file))
-                //{
-                //    var hashResult = md5.ComputeHash(stream);
-                //    stream.Close();
-                //    return BitConverter.ToString(hashResult).Replace("-", "").ToLowerInvariant(); md5.ComputeHash(stream);
-                //}
             }
         }
         public void SendHeader(string sHttpVersion, string sMIMEHeader, long iTotBytes, string sStatusCode, ref Socket mySocket)
@@ -423,9 +219,7 @@ namespace DesktopApp1
             String sBuffer = "";
             // if Mime type is not provided set default to text/html  
             if (sMIMEHeader.Length == 0)
-            {
-                sMIMEHeader = "text/html";// Default Mime Type is text/html  
-            }
+                 sMIMEHeader = "text/html";// Default Mime Type is text/html         
             sBuffer = sBuffer + sHttpVersion + sStatusCode + "\r\n";
             sBuffer = sBuffer + "Server: cx1193719-b\r\n";
             sBuffer = sBuffer + "Content-Type: " + sMIMEHeader + "\r\n";
@@ -437,10 +231,14 @@ namespace DesktopApp1
         }
 
         bool is_running = false;
+        int x = 0;
 
         private void SetText(string text)
         {
-            Invoke(new Action(() => { lblProgress.Text = text; }));
+            if (lblProgress.Location.X-90 > x)
+                x = lblProgress.Location.X - 90;
+
+            Invoke(new Action(() => { lblProgress.Text = text; lblProgress.Location = new Point(x, lblProgress.Location.Y); }));
         }
 
 
@@ -451,11 +249,9 @@ namespace DesktopApp1
             String sDirName;
             String sRequestedFile;
             String sErrorMessage;
-            String sLocalDir;
-            String sMyWebServerRoot = "./";
             String sPhysicalFilePath = "";
-            String sFormattedMessage = "";
-            String sResponse = "";
+            String sMimeType = "application/octet-stream";
+
             Socket mySocket = null;
             while (is_running)
             {
@@ -523,9 +319,9 @@ namespace DesktopApp1
                     {
                         string file_numb = sRequestedFile.Remove(0, 13);
                         Console.WriteLine("page" + file_numb + ".json");
-                        if (File.Exists("page" + file_numb + ".json"))
+                        if (System.IO.File.Exists("page" + file_numb + ".json"))
                         {
-                            string con = File.ReadAllText("page" + file_numb + ".json");
+                            string con = System.IO.File.ReadAllText("page" + file_numb + ".json");
                             //Send to HTTP Page and set header
                             SendHeader(sHttpVersion, "application/json", con.Length, " 200 OK", ref mySocket);
                             SendToBrowser(con, ref mySocket);
@@ -580,17 +376,31 @@ namespace DesktopApp1
                         }
                     }
 
-                    String sMimeType = "text/html";//GetMimeType(sRequestedFile);
-                    //Build the physical path
-
-                    if (sDirName == "/update/" || sRequestedFile.Contains("store.db") || sDirName == "/storedata/")
-                        sPhysicalFilePath = "./" + sDirName + sRequestedFile;
+                    if (sRequestedFile.Contains(".html") || sRequestedFile.Contains(".js") || sRequestedFile.Contains(".bin") || sDirName == "/update/" || sRequestedFile == "store.db" || sDirName.Contains("storedata"))
+                    {
+                        sPhysicalFilePath = serverRoot + sDirName + sRequestedFile;
+                        //MessageBox.Show(sPhysicalFilePath);
+                    }
                     else
-                        sPhysicalFilePath = serverRoot + sDirName.Replace("%20", " ") + sRequestedFile.Replace("%20", " ");
+                    {
+                        if (!sDirName.Contains("/network_drive/"))
+                            sPhysicalFilePath = drive + sDirName.Replace("%20", " ") + sRequestedFile.Replace("%20", " ");
+                        else if (sDirName.Contains("/network_drive/"))
+                        {
+                            Console.WriteLine("B4 workaround PATH: " + sDirName.Replace("%20", " ") + sRequestedFile.Replace("%20", " "));
+                            sPhysicalFilePath = sDirName.Replace("/network_drive/", @"\\") + sRequestedFile.Replace("/network_drive/", @"\\");
+                            Console.WriteLine("after workaround: " + sPhysicalFilePath);
+                        }
+                    }
+
+                    if (sRequestedFile.Contains(".html"))
+                        sMimeType = "text/html";
+                    else if (sRequestedFile.Contains(".js"))
+                        sMimeType = "text/javascript";
+
                     Console.WriteLine("File Requested : " + sPhysicalFilePath);
 
-
-                    if (File.Exists(sPhysicalFilePath) == false)
+                    if (System.IO.File.Exists(sPhysicalFilePath) == false)
                     {
                         sErrorMessage = "<H2>404 Error! File Does Not Exists...</H2>";
                         SendHeader(sHttpVersion, "", sErrorMessage.Length, " 404 Not Found", ref mySocket);
@@ -602,13 +412,14 @@ namespace DesktopApp1
                     {
                         FileInfo fi = new FileInfo(sPhysicalFilePath);
                         int bytesRead = 0;
-                        FileStream inputTempFile = new FileStream(sPhysicalFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        FileStream inputTempFile = new FileStream(sPhysicalFilePath, FileMode.Open, FileAccess.Read);
                         byte[] Array_buffer = new byte[80 * 1024 * 1024];
-                        SendHeader(sHttpVersion, "application/octet-stream", fi.Length, " 200 OK", ref mySocket);
+                        SendHeader(sHttpVersion, sMimeType, fi.Length, " 200 OK", ref mySocket);
                         while ((bytesRead = inputTempFile.Read(Array_buffer, 0, 80 * 1024 * 1024)) > 0)
                         {
                             SendToBrowser(Array_buffer, ref mySocket);
                         }
+
                         inputTempFile.Close();
                         mySocket.Close();
                     }
@@ -621,50 +432,15 @@ namespace DesktopApp1
             if (!is_running && mySocket != null)
                 mySocket.Close();
         }
-        //Thread th = null;
-
-
-
-        private void metroButton1_Click(object sender, EventArgs e)
-        {
-
-
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void lblProgress_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void pictureBox1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void metroTextBox1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label11_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label9_Click(object sender, EventArgs e)
-        {
-
-        }
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
             try
             {
+                th.Abort();
+                th2.Abort();
+                th3.Abort();
+                th4.Abort();
                 myListener.Stop();
             }
             catch (Exception) { }
@@ -677,50 +453,7 @@ namespace DesktopApp1
             catch (Exception) { }
         }
 
-        string serverRoot = "";
-
-        private void metroButton3_Click_1(object sender, EventArgs e)
-        {
-
-
-
-        }
-
-        private void button2_Click_1(object sender, EventArgs e)
-        {
-
-        }
-
-        private void button1_Click_2(object sender, EventArgs e)
-        {
-
-        }
-
-        private void simpleButton1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void groupControl1_DragDrop(object sender, DragEventArgs e)
-        {
-
-        }
-
-        private void groupControl1_DragEnter(object sender, DragEventArgs e)
-        {
-
-        }
-
-        private void addPkgs_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void clearDB_CheckedChanged(object sender, EventArgs e)
-        {
-
-        }
-
+     
         public static IEnumerable<string> GetFiles(string root, string searchPattern) //Required to ignore folders that require admin privileges
         {
             Stack<string> pending = new Stack<string>();
@@ -744,12 +477,6 @@ namespace DesktopApp1
                 catch { }
             }
         }
-
-        private void addPkgs_Click(object sender, EventArgs e)
-        {
-
-        }
-
         private void clearDatabase()
         {
             try
@@ -757,29 +484,12 @@ namespace DesktopApp1
                 SQLiteCommand sql_cmd = sql_con.CreateCommand();
                 sql_cmd.CommandText = "DELETE FROM homebrews;";
                 sql_cmd.ExecuteNonQuery();
-                //sql_con.Close();
-                //SQLiteConnection.ClearPool(sql_con);
-
-                //sql_con.ClearCachedSettings();
-                //sql_con.ReleaseMemory();
-                //sql_con.Dispose();
-
-                //SQLiteConnection.ClearAllPools();
-
-                //GC.Collect();
-                //GC.WaitForPendingFinalizers();
 
             }
             catch (Exception ee)
             {
                 MessageBox.Show(ee.ToString());
             }
-        }
-
-        private void metroButton1_CheckedChanged(object sender, EventArgs e)
-        {
-
-
         }
 
         private void button6_Click(object sender, EventArgs e)
@@ -814,15 +524,12 @@ namespace DesktopApp1
             {
 
                 //Multiple Threads to Download more than one pkg file 
-                Thread th = new Thread(new ThreadStart(StartListen));
+                th = new Thread(new ThreadStart(StartListen));
+                th2 = new Thread(new ThreadStart(StartListen));
+                th3 = new Thread(new ThreadStart(StartListen));
+                th4 = new Thread(new ThreadStart(StartListen));
 
-                Thread th2 = new Thread(new ThreadStart(StartListen));
-
-                Thread th3 = new Thread(new ThreadStart(StartListen));
-
-                Thread th4 = new Thread(new ThreadStart(StartListen));
-
-                serverRoot = Directory.GetDirectoryRoot(pkgText.Text);
+                drive = Directory.GetDirectoryRoot(pkgText.Text);
                 if (!is_running)
                 {
                     try
@@ -843,28 +550,36 @@ namespace DesktopApp1
                         th3.Start();
                         th4.Start();
 
-                        lblProgress.Text = "                           Running...";
+                        lblProgress.Text = "Running...";
                         lblProgress.ForeColor = Color.Lime;
+
                     }
                     catch (Exception xx)
                     {
                         groupControl1.Enabled = true;
                         networkGroup.Enabled = true;
+                        lblProgress.Location = new Point(x + 90, lblProgress.Location.Y);
                         Console.WriteLine("An Exception Occurred while Listening :" + xx.ToString());
-                        lblProgress.Text = "Listening Error: " + xx.ToString();
+                        lblProgress.Text = "Listening Error";
+                        MessageBox.Show("Listening Error: " + xx.ToString());
                         lblProgress.ForeColor = Color.Red;
                         is_running = false;
                     }
                 }
                 else
                 {
+                    // set everything back to normal
+                    lblProgress.Location = new Point(x+90, lblProgress.Location.Y);
                     groupControl1.Enabled = true;
                     networkGroup.Enabled = true;
                     lblProgress.ForeColor = Color.Red;
-                    lblProgress.Text = "                           Stopping ...";
+                    lblProgress.Text = "Stopping ...";
                     myListener.Stop();
                     th.Abort();
-                    lblProgress.Text = "                           Stopped";
+                    th2.Abort();
+                    th3.Abort();
+                    th4.Abort();
+                    lblProgress.Text = "Stopped";
                     is_running = false;
                 }
             }
@@ -879,7 +594,6 @@ namespace DesktopApp1
             string[] pkgFolder = (string[])e.Data.GetData(DataFormats.FileDrop);
             pkgText.Text = pkgFolder[0];
         }
-
         private void groupControl1_DragEnter_1(object sender, DragEventArgs e)
         {
             e.Effect = System.Windows.Forms.DragDropEffects.All;
@@ -891,12 +605,12 @@ namespace DesktopApp1
             if (pkgText.Text != "" && pkgText.Text != null && pkgText.Text != string.Empty && metroTextBox1.Text != "" && metroTextBox1.Text != null && metroTextBox1.Text != string.Empty)
             {
                 string tmpPath = pkgText.Text;
-                serverRoot = Directory.GetDirectoryRoot(tmpPath);
                 IEnumerable<string> PkgFiles = GetFiles(tmpPath, "*.pkg");
                 int counter = 0;
                 progressBar1.Value = 0;
                 progressBar1.Maximum = PkgFiles.Count();
                 //SQLiteConnection sql_con = new SQLiteConnection("Data Source=store.db;");
+                int i = 0;
                 foreach (string pkgTitle in PkgFiles)
                 {
                     try
@@ -904,42 +618,55 @@ namespace DesktopApp1
                         var pkgfile = PS4_Tools.PKG.SceneRelated.Read_PKG(pkgTitle);
                         pictureBox1.Image = BytesToBitmap(pkgfile.Image);
 
-                        label9.Text = pkgfile.PS4_Title;
-                        label10.Text = pkgfile.Param.TitleID;
+                        // safety check
+                        string tid = pkgfile.Param.TitleID;
+                        if (string.IsNullOrEmpty(tid))
+                            tid = "UTID000" + i++;
+                        string title = pkgfile.PS4_Title;
+                        if (string.IsNullOrEmpty(title))
+                            title = "Unknown title: 000" + i;
+
+                        label9.Text = title;
+                        label10.Text = tid;
                         label11.Text = calcsize(pkgTitle);
-                        label12.Text = "storedata/ " + pkgfile.Param.TitleID + ".png";
+                        label12.Text = "storedata/ " + tid + ".png";
                         label13.Text = pkgfile.Param.APP_VER;
                         label14.Text = pkgfile.Param.PlaystationVersion.ToString();
 
 
-                        if (!Directory.Exists("storedata"))
-                            Directory.CreateDirectory("storedata");
+                        if (!Directory.Exists(serverRoot + "/storedata"))
+                            Directory.CreateDirectory(serverRoot + "/storedata");
 
-                        SavePic(BytesToBitmap(pkgfile.Icon), "storedata/" + pkgfile.Param.TitleID + ".png");
+                        SavePic(BytesToBitmap(pkgfile.Icon), serverRoot + "/storedata/" + tid + ".png");
 
                         //start listing on the given port  
                         int rc = count_rows() + 1;
+                        string pkg = "http://" + metroTextBox1.Text + "/" + pkgTitle.Substring(3).Replace(@"\", "/");
+                        if (pkgText.Text.Contains(@"\\"))
+                        {
+                            pkg = "http://" + metroTextBox1.Text + "/network_drive/" + pkgTitle.Replace(@"\", "/");
+                        }
 
                         //sql_con.Open();
                         SQLiteCommand sql_cmd = sql_con.CreateCommand();
                         sql_cmd.CommandText = "INSERT INTO homebrews (pid, id, name, desc, image, package, version, picpath, desc_1, desc_2, ReviewStars, Size, Author, apptype, pv, main_icon_path, main_menu_pic, releaseddate,number_downloads) VALUES(@pid, @id, @name, @desc, @image, @package, @version, @picpath, @desc_1, @desc_2, @ReviewStars, @Size, @Author, @apptype, @pv, @main_icon_path, @main_menu_pic, @releaseddate, @number_downloads);";
                         sql_cmd.Parameters.AddWithValue("@pid", rc.ToString());
-                        sql_cmd.Parameters.AddWithValue("@id", pkgfile.Param.TitleID);
-                        sql_cmd.Parameters.AddWithValue("@name", pkgfile.PS4_Title);
+                        sql_cmd.Parameters.AddWithValue("@id", tid);
+                        sql_cmd.Parameters.AddWithValue("@name", title);
                         sql_cmd.Parameters.AddWithValue("@desc", "PKG Added via Store CDN tool");
-                        sql_cmd.Parameters.AddWithValue("@image", "http://" + metroTextBox1.Text + "/storedata/" + pkgfile.Param.TitleID + ".png");
-                        sql_cmd.Parameters.AddWithValue("@package", "http://" + metroTextBox1.Text + "/" + pkgTitle.Substring(3).Replace(@"\", "/"));
+                        sql_cmd.Parameters.AddWithValue("@image", "http://" + metroTextBox1.Text + "/storedata/" + tid + ".png");
+                        sql_cmd.Parameters.AddWithValue("@package", pkg);
                         sql_cmd.Parameters.AddWithValue("@version", pkgfile.Param.APP_VER);
-                        sql_cmd.Parameters.AddWithValue("@picpath", "/user/app/NPXS39041/storedata/" + pkgfile.Param.TitleID + ".png");
+                        sql_cmd.Parameters.AddWithValue("@picpath", "/user/app/NPXS39041/storedata/" + tid + ".png");
                         sql_cmd.Parameters.AddWithValue("@desc_1", "");
                         sql_cmd.Parameters.AddWithValue("@desc_2", "");
                         sql_cmd.Parameters.AddWithValue("@ReviewStars", "0/5");
                         sql_cmd.Parameters.AddWithValue("@Size", calcsize(pkgTitle));
                         sql_cmd.Parameters.AddWithValue("@Author", "Store Tool");
-                        sql_cmd.Parameters.AddWithValue("@apptype", "HB Game");
+                        sql_cmd.Parameters.AddWithValue("@apptype", apptype_info(pkgfile.PKG_Type));
                         sql_cmd.Parameters.AddWithValue("@pv", pkgfile.Param.PlaystationVersion);
-                        sql_cmd.Parameters.AddWithValue("@main_icon_path", "http://" + metroTextBox1.Text + "/storedata/" + pkgfile.Param.TitleID + ".png");
-                        sql_cmd.Parameters.AddWithValue("@main_menu_pic", "/user/app/NPXS39041/storedata/" + pkgfile.Param.TitleID + ".png");
+                        sql_cmd.Parameters.AddWithValue("@main_icon_path", "http://" + metroTextBox1.Text + "/storedata/" + tid + ".png");
+                        sql_cmd.Parameters.AddWithValue("@main_menu_pic", "/user/app/NPXS39041/storedata/" + tid + ".png");
                         sql_cmd.Parameters.AddWithValue("@releaseddate", DateTime.Now.ToString());
                         sql_cmd.Parameters.AddWithValue("@number_downloads", "0");
                         sql_cmd.ExecuteNonQuery();
@@ -955,17 +682,6 @@ namespace DesktopApp1
 
                 }
 
-                //sql_con.Close();
-                //SQLiteConnection.ClearPool(sql_con);
-
-                //sql_con.ClearCachedSettings();
-                //sql_con.Dispose();
-
-                //SQLiteConnection.ClearAllPools();
-
-                //GC.Collect();
-                //GC.WaitForPendingFinalizers();
-
                 PkgCount.Text = "Found " + counter.ToString() + " Valid Pkg(s) of " + PkgFiles.Count().ToString();
                 counter = 0;
             }
@@ -973,6 +689,91 @@ namespace DesktopApp1
             {
                 MessageBox.Show("IP or Pkg Path is empty or invalid", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
+        }
+
+        private bool add_to_start(bool add = true)
+        {
+            try
+            {
+                WshShell wshShell = new WshShell();
+                IWshRuntimeLibrary.IWshShortcut shortcut;
+                string startUpFolderPath = Environment.GetFolderPath(Environment.SpecialFolder.Startup);
+                if (add)
+                {
+                    // Create the shortcut
+                    shortcut = (IWshRuntimeLibrary.IWshShortcut)wshShell.CreateShortcut(startUpFolderPath + "\\" + Application.ProductName + ".lnk");
+
+                    shortcut.TargetPath = Application.ExecutablePath;
+                    shortcut.WorkingDirectory = Application.StartupPath;
+                    shortcut.Description = "Store CDN Server";
+                    // shortcut.IconLocation = Application.StartupPath + @"\App.ico";
+                    shortcut.Save();
+                }
+                else
+                {
+                    System.IO.File.Delete(startUpFolderPath + "\\" + Application.ProductName + ".lnk");
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        private void button1_Click_3(object sender, EventArgs e)
+        {
+            RegistryKey rk = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true);
+            if (!isautostart)
+            {
+                try
+                {
+                    if (rk == null)
+                        throw new ArgumentException("rip reg key is null");
+
+                    rk.SetValue("Store CDN Server", Application.ExecutablePath);
+
+                    MessageBox.Show("CDN Server will now start on Windows Startup");
+                    isautostart = true;
+                }
+                catch
+                {
+                    try
+                    {
+                        add_to_start(true);
+                    }
+                    catch
+                    {
+                        MessageBox.Show("Failed to make shortcut");
+
+                    }
+                    MessageBox.Show("An error has occured when trying to set the reg key");
+                }
+            }
+            else
+            {
+                try
+                {
+                    if (rk == null)
+                        throw new ArgumentException("rip reg key is null");
+
+                    rk.DeleteValue("Store CDN Server", false);
+                    MessageBox.Show("Booting on statup is now disabled");
+                    isautostart = false;
+                }
+                catch
+                {
+                    try
+                    {
+                        add_to_start(false);
+                    }
+                    catch { };
+
+                    MessageBox.Show("An error has occured when trying to delete the reg key");
+                }
+            }
+            button1.Text = isautostart ? "Disable" : "Enable";
+            button1.ForeColor = isautostart ? Color.Red : Color.Green;
         }
     }
 }

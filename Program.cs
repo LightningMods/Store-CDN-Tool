@@ -7,7 +7,7 @@ using System.Windows.Forms;
 using System.Net.Http;
 using System.Net;
 
-namespace DesktopApp1
+namespace Store_CDN_Server
 {
     static class Program
     {

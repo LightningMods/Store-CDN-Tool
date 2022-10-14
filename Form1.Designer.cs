@@ -1,6 +1,6 @@
 using System;
 
-namespace DesktopApp1
+namespace Store_CDN_Server
 {
     partial class Form1
     {
@@ -34,7 +34,6 @@ namespace DesktopApp1
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.progressBar3 = new System.Windows.Forms.OpenFileDialog();
-            this.metroButton2 = new MetroFramework.Controls.MetroButton();
             this.label2 = new System.Windows.Forms.Label();
             this.lblPackageInfo = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
@@ -60,16 +59,20 @@ namespace DesktopApp1
             this.button5 = new System.Windows.Forms.Button();
             this.button4 = new System.Windows.Forms.Button();
             this.pkgText = new MetroFramework.Controls.MetroTextBox();
-            this.groupBox3 = new System.Windows.Forms.GroupBox();
             this.lblProgress = new System.Windows.Forms.Label();
+            this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.label15 = new System.Windows.Forms.Label();
+            this.button1 = new System.Windows.Forms.Button();
             this.PkgCount = new System.Windows.Forms.Label();
             this.label17 = new System.Windows.Forms.Label();
             this.button3 = new System.Windows.Forms.Button();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.networkGroup.SuspendLayout();
             this.groupControl1.SuspendLayout();
             this.groupBox3.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
             // contextMenuStrip1
@@ -77,28 +80,17 @@ namespace DesktopApp1
             this.contextMenuStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.contextMenuStrip1.Name = "contextMenuStrip1";
             this.contextMenuStrip1.Size = new System.Drawing.Size(61, 4);
-            this.contextMenuStrip1.Opening += new System.ComponentModel.CancelEventHandler(this.contextMenuStrip1_Opening);
             // 
             // progressBar3
             // 
             this.progressBar3.FileName = "progressBar3";
-            // 
-            // metroButton2
-            // 
-            this.metroButton2.Location = new System.Drawing.Point(65, 522);
-            this.metroButton2.Name = "metroButton2";
-            this.metroButton2.Size = new System.Drawing.Size(93, 23);
-            this.metroButton2.TabIndex = 7;
-            this.metroButton2.Text = "Add PKG to DB";
-            this.metroButton2.UseSelectable = true;
-            this.metroButton2.Click += new System.EventHandler(this.metroButton2_Click);
             // 
             // label2
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label2.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.label2.Location = new System.Drawing.Point(2, 303);
+            this.label2.Location = new System.Drawing.Point(4, 326);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(84, 13);
             this.label2.TabIndex = 12;
@@ -122,7 +114,6 @@ namespace DesktopApp1
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 21;
             this.pictureBox1.TabStop = false;
-            this.pictureBox1.Click += new System.EventHandler(this.pictureBox1_Click);
             // 
             // label3
             // 
@@ -199,7 +190,6 @@ namespace DesktopApp1
             this.label9.Size = new System.Drawing.Size(22, 13);
             this.label9.TabIndex = 28;
             this.label9.Text = "NA";
-            this.label9.Click += new System.EventHandler(this.label9_Click);
             // 
             // label10
             // 
@@ -220,7 +210,6 @@ namespace DesktopApp1
             this.label11.Size = new System.Drawing.Size(22, 13);
             this.label11.TabIndex = 30;
             this.label11.Text = "NA";
-            this.label11.Click += new System.EventHandler(this.label11_Click);
             // 
             // label12
             // 
@@ -260,7 +249,6 @@ namespace DesktopApp1
             this.metroButton3.TabIndex = 34;
             this.metroButton3.Text = "Add Folder";
             this.metroButton3.UseSelectable = true;
-            this.metroButton3.Click += new System.EventHandler(this.metroButton3_Click_1);
             // 
             // networkGroup
             // 
@@ -351,7 +339,7 @@ namespace DesktopApp1
             this.groupControl1.Margin = new System.Windows.Forms.Padding(1);
             this.groupControl1.Name = "groupControl1";
             this.groupControl1.Padding = new System.Windows.Forms.Padding(1);
-            this.groupControl1.Size = new System.Drawing.Size(283, 92);
+            this.groupControl1.Size = new System.Drawing.Size(283, 91);
             this.groupControl1.TabIndex = 46;
             this.groupControl1.TabStop = false;
             this.groupControl1.Text = "Pkg Directory";
@@ -427,33 +415,63 @@ namespace DesktopApp1
             this.pkgText.WaterMarkColor = System.Drawing.Color.Gray;
             this.pkgText.WaterMarkFont = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             // 
+            // lblProgress
+            // 
+            this.lblProgress.AutoSize = true;
+            this.lblProgress.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblProgress.ForeColor = System.Drawing.Color.Red;
+            this.lblProgress.Location = new System.Drawing.Point(110, 9);
+            this.lblProgress.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.lblProgress.Name = "lblProgress";
+            this.lblProgress.Size = new System.Drawing.Size(86, 13);
+            this.lblProgress.TabIndex = 48;
+            this.lblProgress.Text = "Server Offline...";
+            this.lblProgress.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            // 
             // groupBox3
             // 
-            this.groupBox3.Controls.Add(this.lblProgress);
+            this.groupBox3.Controls.Add(this.label15);
+            this.groupBox3.Controls.Add(this.button1);
             this.groupBox3.Location = new System.Drawing.Point(17, 206);
             this.groupBox3.Name = "groupBox3";
             this.groupBox3.Size = new System.Drawing.Size(283, 35);
             this.groupBox3.TabIndex = 47;
             this.groupBox3.TabStop = false;
             // 
-            // lblProgress
+            // label15
             // 
-            this.lblProgress.AutoSize = true;
-            this.lblProgress.Font = new System.Drawing.Font("Segoe UI", 9.75F);
-            this.lblProgress.ForeColor = System.Drawing.Color.Red;
-            this.lblProgress.Location = new System.Drawing.Point(6, 9);
-            this.lblProgress.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
-            this.lblProgress.Name = "lblProgress";
-            this.lblProgress.Size = new System.Drawing.Size(180, 17);
-            this.lblProgress.TabIndex = 48;
-            this.lblProgress.Text = "                     Server Offline...";
+            this.label15.AutoSize = true;
+            this.label15.Font = new System.Drawing.Font("Microsoft Sans Serif", 7.8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label15.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
+            this.label15.Location = new System.Drawing.Point(14, 12);
+            this.label15.Margin = new System.Windows.Forms.Padding(2, 0, 2, 0);
+            this.label15.Name = "label15";
+            this.label15.Size = new System.Drawing.Size(164, 13);
+            this.label15.TabIndex = 55;
+            this.label15.Text = "Start Server On Windows Startup";
+            // 
+            // button1
+            // 
+            this.button1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(38)))));
+            this.button1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.button1.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(67)))), ((int)(((byte)(67)))), ((int)(((byte)(70)))));
+            this.button1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.button1.Font = new System.Drawing.Font("Tahoma", 8.25F);
+            this.button1.ForeColor = System.Drawing.Color.White;
+            this.button1.Location = new System.Drawing.Point(182, 7);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(88, 21);
+            this.button1.TabIndex = 54;
+            this.button1.Text = "Enable";
+            this.button1.UseVisualStyleBackColor = false;
+            this.button1.Click += new System.EventHandler(this.button1_Click_3);
             // 
             // PkgCount
             // 
             this.PkgCount.AutoSize = true;
             this.PkgCount.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Italic);
             this.PkgCount.ForeColor = System.Drawing.SystemColors.ControlDarkDark;
-            this.PkgCount.Location = new System.Drawing.Point(169, 303);
+            this.PkgCount.Location = new System.Drawing.Point(164, 323);
             this.PkgCount.Name = "PkgCount";
             this.PkgCount.Size = new System.Drawing.Size(0, 13);
             this.PkgCount.TabIndex = 48;
@@ -478,7 +496,7 @@ namespace DesktopApp1
             this.button3.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.button3.Font = new System.Drawing.Font("Tahoma", 8.25F);
             this.button3.ForeColor = System.Drawing.Color.White;
-            this.button3.Location = new System.Drawing.Point(79, 250);
+            this.button3.Location = new System.Drawing.Point(76, 276);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(147, 40);
             this.button3.TabIndex = 52;
@@ -494,12 +512,22 @@ namespace DesktopApp1
             this.progressBar1.Size = new System.Drawing.Size(282, 1);
             this.progressBar1.TabIndex = 53;
             // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.lblProgress);
+            this.groupBox1.Location = new System.Drawing.Point(17, 241);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(283, 29);
+            this.groupBox1.TabIndex = 56;
+            this.groupBox1.TabStop = false;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(45)))), ((int)(((byte)(48)))));
-            this.ClientSize = new System.Drawing.Size(317, 325);
+            this.ClientSize = new System.Drawing.Size(317, 344);
+            this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.button3);
             this.Controls.Add(this.label17);
@@ -523,7 +551,6 @@ namespace DesktopApp1
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.lblPackageInfo);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.metroButton2);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Margin = new System.Windows.Forms.Padding(2);
@@ -540,6 +567,8 @@ namespace DesktopApp1
             this.groupControl1.ResumeLayout(false);
             this.groupBox3.ResumeLayout(false);
             this.groupBox3.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -559,7 +588,6 @@ namespace DesktopApp1
 
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
         private System.Windows.Forms.OpenFileDialog progressBar3;
-        private MetroFramework.Controls.MetroButton metroButton2;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label lblPackageInfo;
         private System.Windows.Forms.PictureBox pictureBox1;
@@ -591,6 +619,9 @@ namespace DesktopApp1
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.ProgressBar progressBar1;
+        private System.Windows.Forms.Label label15;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.GroupBox groupBox1;
     }
 }
 
