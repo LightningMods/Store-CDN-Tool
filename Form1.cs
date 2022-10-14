@@ -48,7 +48,7 @@ namespace Store_CDN_Server
             ini = new Ini.IniFile(serverRoot + @"\settings.ini");
             groupControl1.AllowDrop = true;
             metroTextBox1.Text = Properties.Settings.Default.IP;
-            sql_con = new SQLiteConnection("Data Source=" + serverRoot + @"\store.db;");
+            sql_con = new SQLiteConnection("Data Source=" + serverRoot + @"/store.db;");
             Console.WriteLine("INI: " + serverRoot + @"\settings.ini" + " ROOT: " + serverRoot);
 
         }
@@ -74,6 +74,7 @@ namespace Store_CDN_Server
             if (!System.IO.File.Exists(serverRoot + "/store.db"))
             {
                 SQLiteConnection.CreateFile(serverRoot + "/store.db");
+                SQLiteConnection.CreateFile(serverRoot + "/store_readonly.db");
                 sql_con.Open();
                 string create_db = "CREATE TABLE homebrews ( pid int UNSIGNED NOT NULL,id varchar(255), name varchar(255), desc varchar(255), image varchar(255), package varchar(255), version varchar(255) ,picpath varchar(255) ,desc_1 varchar(255) ,desc_2 varchar(255) ,ReviewStars varchar(255) ,Size varchar(255) ,Author varchar(255) ,apptype varchar(255) ,pv varchar(255) ,main_icon_path varchar(255) ,main_menu_pic varchar(255) ,releaseddate date DEFAULT NULL,number_downloads int NOT NULL);";
                 SQLiteCommand command = new SQLiteCommand(create_db, sql_con);
@@ -352,7 +353,7 @@ namespace Store_CDN_Server
                     if (sRequestedFile.Contains("api.php?db_check_hash"))
                     {
 
-                        string json = "{\"hash\":\"" + md5_file("./store.db") + "\"}";
+                        string json = "{\"hash\":\"" + md5_file("./store_readonly.db") + "\"}";
                         SendHeader(sHttpVersion, "application/json", json.Length, " 200 OK", ref mySocket);
                         SendToBrowser(json, ref mySocket);
 
@@ -378,6 +379,9 @@ namespace Store_CDN_Server
 
                     if (sRequestedFile.Contains(".html") || sRequestedFile.Contains(".js") || sRequestedFile.Contains(".bin") || sDirName == "/update/" || sRequestedFile == "store.db" || sDirName.Contains("storedata"))
                     {
+                        if (sRequestedFile == "store.db") //redirect open db to readonly db
+                            sRequestedFile = "store_readonly.db";
+
                         sPhysicalFilePath = serverRoot + sDirName + sRequestedFile;
                         //MessageBox.Show(sPhysicalFilePath);
                     }
@@ -683,6 +687,7 @@ namespace Store_CDN_Server
                 }
 
                 PkgCount.Text = "Found " + counter.ToString() + " Valid Pkg(s) of " + PkgFiles.Count().ToString();
+                System.IO.File.Copy(serverRoot + "/store.db", serverRoot + "/store_readonly.db", true);
                 counter = 0;
             }
             else
