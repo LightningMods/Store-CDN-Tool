@@ -53,7 +53,7 @@ namespace Store_CDN_Server
 
         }
 
-        private string apptype_info(PS4_Tools.PKG.SceneRelated.PKGType type)
+        private string apptype_info(PS4_Tools.PKG.SceneRelated.PKGType type, string filename)
         {
             switch (type)
             {
@@ -63,8 +63,13 @@ namespace Store_CDN_Server
                     return "App";
                 case PS4_Tools.PKG.SceneRelated.PKGType.Patch:
                     return "Patch";
-                case PS4_Tools.PKG.SceneRelated.PKGType.Addon_Theme:
-                    return "Theme";
+                case PS4_Tools.PKG.SceneRelated.PKGType.Addon_Theme: // workaround for PS4 Tools
+                {
+                        if (filename.Contains("theme") || filename.Contains("Theme"))
+                            return "Theme";
+                        else
+                            return "DLC";
+                }
             }
 
             return "Unknown";
@@ -81,7 +86,12 @@ namespace Store_CDN_Server
                 command.ExecuteNonQuery();
             }
             else
+            {
+                if (!System.IO.File.Exists(serverRoot + "/store_readonly.db"))
+                     System.IO.File.Copy(serverRoot + "/store.db", serverRoot + "/store_readonly.db", true);
+                
                 sql_con.Open();
+            }
 
 
             foreach (NetworkInterface ni in NetworkInterface.GetAllNetworkInterfaces())
@@ -269,6 +279,7 @@ namespace Store_CDN_Server
                     is_running = false;
                     return;
                 }
+                bool is_head = false;
                 //Accept a new connection  
                 mySocket = myListener.AcceptSocket();
                 Console.WriteLine("Socket Type " + mySocket.SocketType);
@@ -284,8 +295,13 @@ namespace Store_CDN_Server
                     if (sBuffer.Substring(0, 3) != "GET")
                     {
                         Console.WriteLine("Only Get Method is supported..");
-                        mySocket.Close();
-                        continue;
+                      //  mySocket.Close();
+                      //  continue;
+                    }
+                    if (sBuffer.Substring(0, 4) == "HEAD")
+                    {
+                        Console.WriteLine("Head set..");
+                        is_head = true;
                     }
                     // Look for HTTP request  
                     iStartPos = sBuffer.IndexOf("HTTP", 1);
@@ -306,8 +322,8 @@ namespace Store_CDN_Server
                     iStartPos = sRequest.LastIndexOf("/") + 1;
                     sRequestedFile = sRequest.Substring(iStartPos);
                     //Extract The directory Name  
-
-                    sDirName = sRequest.Substring(sRequest.IndexOf("/"), sRequest.LastIndexOf("/") - 3);
+                    int re = (is_head) ? 4 : 3;
+                    sDirName = sRequest.Substring(sRequest.IndexOf("/"), sRequest.LastIndexOf("/") - re);
 
                     Console.WriteLine("Directory Requested : " + sDirName);
                     //If the physical directory does not exists then
@@ -419,9 +435,12 @@ namespace Store_CDN_Server
                         FileStream inputTempFile = new FileStream(sPhysicalFilePath, FileMode.Open, FileAccess.Read);
                         byte[] Array_buffer = new byte[80 * 1024 * 1024];
                         SendHeader(sHttpVersion, sMimeType, fi.Length, " 200 OK", ref mySocket);
-                        while ((bytesRead = inputTempFile.Read(Array_buffer, 0, 80 * 1024 * 1024)) > 0)
+                        if (!is_head)
                         {
-                            SendToBrowser(Array_buffer, ref mySocket);
+                            while ((bytesRead = inputTempFile.Read(Array_buffer, 0, 80 * 1024 * 1024)) > 0)
+                            {
+                                SendToBrowser(Array_buffer, ref mySocket);
+                            }
                         }
 
                         inputTempFile.Close();
@@ -667,7 +686,7 @@ namespace Store_CDN_Server
                         sql_cmd.Parameters.AddWithValue("@ReviewStars", "0/5");
                         sql_cmd.Parameters.AddWithValue("@Size", calcsize(pkgTitle));
                         sql_cmd.Parameters.AddWithValue("@Author", "Store Tool");
-                        sql_cmd.Parameters.AddWithValue("@apptype", apptype_info(pkgfile.PKG_Type));
+                        sql_cmd.Parameters.AddWithValue("@apptype", apptype_info(pkgfile.PKG_Type, pkgTitle));
                         sql_cmd.Parameters.AddWithValue("@pv", pkgfile.Param.PlaystationVersion);
                         sql_cmd.Parameters.AddWithValue("@main_icon_path", "http://" + metroTextBox1.Text + "/storedata/" + tid + ".png");
                         sql_cmd.Parameters.AddWithValue("@main_menu_pic", "/user/app/NPXS39041/storedata/" + tid + ".png");
