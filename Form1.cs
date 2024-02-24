@@ -195,19 +195,30 @@ namespace Store_CDN_Server
         {
             SendToBrowser(Encoding.ASCII.GetBytes(sData), ref mySocket);
         }
-        public void SendToBrowser(Byte[] bSendData, ref Socket mySocket)
+        public void SendToBrowser(Byte[] bSendData, ref Socket mySocket, long startRange = 0)
         {
-            int numBytes = 0;
             try
             {
                 if (mySocket.Connected)
                 {
-                    if ((numBytes = mySocket.Send(bSendData, bSendData.Length, 0)) == -1)
-                        Console.WriteLine("Socket Error cannot Send Packet");
+                    // Adjust this to send in chunks and respect the range header if present
+                    long dataToSend = bSendData.Length - startRange;
+                    int bytesSent = 0;
+
+                    while (dataToSend > 0)
+                    {
+                        // Send in chunks of up to 5MB
+                        int chunkSize = (int)Math.Min(dataToSend, 5 * 1024 * 1024);
+                        bytesSent += mySocket.Send(bSendData, (int)startRange + bytesSent, chunkSize, 0);
+                        dataToSend -= chunkSize;
+                    }
                 }
-                else Console.WriteLine("Connection Dropped....");
+                else
+                {
+                    Console.WriteLine("Connection Dropped....");
+                }
             }
-            catch (Exception e)
+            catch (SocketException e)
             {
                 Console.WriteLine("Error Occurred : {0} ", e);
             }
@@ -225,20 +236,27 @@ namespace Store_CDN_Server
                 return BitConverter.ToString(hashResult).Replace("-", "").ToLowerInvariant();
             }
         }
-        public void SendHeader(string sHttpVersion, string sMIMEHeader, long iTotBytes, string sStatusCode, ref Socket mySocket)
+        public void SendHeader(string sHttpVersion, string sMIMEHeader, long iTotBytes, string sStatusCode, ref Socket mySocket, string contentRange = "")
         {
-            String sBuffer = "";
-            // if Mime type is not provided set default to text/html  
-            if (sMIMEHeader.Length == 0)
-                 sMIMEHeader = "text/html";// Default Mime Type is text/html         
-            sBuffer = sBuffer + sHttpVersion + sStatusCode + "\r\n";
-            sBuffer = sBuffer + "Server: cx1193719-b\r\n";
-            sBuffer = sBuffer + "Content-Type: " + sMIMEHeader + "\r\n";
-            sBuffer = sBuffer + "Accept-Ranges: bytes\r\n";
-            sBuffer = sBuffer + "Content-Length: " + iTotBytes + "\r\n\r\n";
-            Byte[] bSendData = Encoding.ASCII.GetBytes(sBuffer);
+            StringBuilder sBuffer = new StringBuilder();
+            sBuffer.Append(sHttpVersion + sStatusCode + "\r\n");
+            sBuffer.Append("Server: CustomCDNServer\r\n");
+            sBuffer.Append("Content-Type: " + sMIMEHeader + "\r\n");
+
+            // Include Content-Range header if provided (for partial content responses)
+            if (!string.IsNullOrEmpty(contentRange))
+            {
+                sBuffer.Append(contentRange);
+            }
+
+            sBuffer.Append("Accept-Ranges: bytes\r\n");
+            sBuffer.Append("Content-Length: " + iTotBytes + "\r\n");
+
+            // Keep the connection alive (if your logic supports it)
+            sBuffer.Append("Connection: keep-alive\r\n\r\n");
+
+            Byte[] bSendData = Encoding.ASCII.GetBytes(sBuffer.ToString());
             SendToBrowser(bSendData, ref mySocket);
-            //Console.WriteLine("Total Bytes : " + iTotBytes.ToString());
         }
 
         bool is_running = false;
@@ -291,6 +309,19 @@ namespace Store_CDN_Server
                     int i = mySocket.Receive(bReceive, bReceive.Length, 0);
                     //Convert Byte to String  
                     string sBuffer = Encoding.ASCII.GetString(bReceive);
+                    iStartPos = sBuffer.IndexOf("Range:");
+                    string range_header = "";
+                    if (iStartPos != -1)
+                    {
+                        // Find the end of the line to accurately capture the Range header value
+                        int iEndPos = sBuffer.IndexOf("\r\n", iStartPos);
+                        if (iEndPos > iStartPos)
+                        {
+                            range_header = sBuffer.Substring(iStartPos, iEndPos - iStartPos);
+                            // Optionally, trim the "Range:" part if you only want the value
+                            range_header = range_header.Replace("Range: ", ""); // This leaves just the range value, e.g., "bytes=0-65535"
+                        }
+                    }
                     //At present we will only deal with GET type  
                     if (sBuffer.Substring(0, 3) != "GET")
                     {
@@ -303,6 +334,8 @@ namespace Store_CDN_Server
                         Console.WriteLine("Head set..");
                         is_head = true;
                     }
+                    //print out the http request header
+                    Console.WriteLine(sBuffer);
                     // Look for HTTP request  
                     iStartPos = sBuffer.IndexOf("HTTP", 1);
                     // Get the HTTP text and version e.g. it will return "HTTP/1.1"  
@@ -314,6 +347,7 @@ namespace Store_CDN_Server
                     //that it is a directory and then we will look for the   
                     //default file name..
                     //
+                    //get the range http header for sbuffer
                     if ((sRequest.IndexOf(".") < 1) && (!sRequest.EndsWith("/")))
                     {
                         sRequest = sRequest + "/";
@@ -419,8 +453,20 @@ namespace Store_CDN_Server
                         sMimeType = "text/javascript";
 
                     Console.WriteLine("File Requested : " + sPhysicalFilePath);
+                    // Check if the URL contains "?&product"
+                    if (sPhysicalFilePath.Contains("?&product"))
+                    {
+                        // Find the index of ".pkg" and add 4 to include the ".pkg" in the substring
+                        int pkgIndex = sPhysicalFilePath.IndexOf(".pkg") + 4;
 
-                    if (System.IO.File.Exists(sPhysicalFilePath) == false)
+                        // Use substring method to get everything up to and including ".pkg"
+                        string modifiedUrl = sPhysicalFilePath.Substring(0, pkgIndex);
+
+                        sPhysicalFilePath = modifiedUrl;
+                        Console.WriteLine("Modified URL: " + sPhysicalFilePath);
+                    }
+
+                    if (!System.IO.File.Exists(sPhysicalFilePath))
                     {
                         sErrorMessage = "<H2>404 Error! File Does Not Exists...</H2>";
                         SendHeader(sHttpVersion, "", sErrorMessage.Length, " 404 Not Found", ref mySocket);
@@ -431,18 +477,72 @@ namespace Store_CDN_Server
                     else
                     {
                         FileInfo fi = new FileInfo(sPhysicalFilePath);
-                        int bytesRead = 0;
-                        FileStream inputTempFile = new FileStream(sPhysicalFilePath, FileMode.Open, FileAccess.Read);
-                        byte[] Array_buffer = new byte[80 * 1024 * 1024];
-                        SendHeader(sHttpVersion, sMimeType, fi.Length, " 200 OK", ref mySocket);
-                        if (!is_head)
+                        long startRange = 0;
+                        long endRange = fi.Length - 1;
+
+                        // Check if the Range header is present and parse it
+                        if (!string.IsNullOrEmpty(range_header) && range_header.StartsWith("bytes="))
                         {
-                            while ((bytesRead = inputTempFile.Read(Array_buffer, 0, 80 * 1024 * 1024)) > 0)
+                            // Remove the "bytes=" part to facilitate parsing
+                            string range = range_header.Substring(6); // "0-65535" for the example
+
+                            // Split the range by '-' to separate start and end values
+                            string[] rangeParts = range.Split('-');
+
+                            // Attempt to parse the start range, defaulting to 0 on failure
+                            if (!long.TryParse(rangeParts[0], out startRange))
                             {
-                                SendToBrowser(Array_buffer, ref mySocket);
+                                startRange = 0; // Default to the start of the file if parsing fails
+                            }
+
+                            // Attempt to parse the end range if specified, defaulting to file length minus one
+                            if (rangeParts.Length > 1 && !string.IsNullOrEmpty(rangeParts[1]))
+                            {
+                                if (!long.TryParse(rangeParts[1], out endRange))
+                                {
+                                    // Assuming fi represents the FileInfo object for the file being served
+                                    endRange = fi.Length - 1; // Default to the end of the file if parsing fails
+                                }
+                            }
+                            else
+                            {
+                                // If no end range specified, use the file's total length
+                                endRange = fi.Length - 1;
                             }
                         }
 
+                        long contentLength = endRange - startRange + 1;
+                        Console.WriteLine("Content Length: " + contentLength);
+                        FileStream inputTempFile = new FileStream(sPhysicalFilePath, FileMode.Open, FileAccess.Read);
+                        inputTempFile.Seek(startRange, SeekOrigin.Begin);
+
+                        // Adjust the buffer size if necessary
+                        byte[] buffer = new byte[4*1024*1024];
+                        int bytesRead;
+                        long bytesToSend = contentLength;
+
+                        // Modify the status code and headers for partial content if a range request was made
+                        string statusCode = !string.IsNullOrEmpty(range_header) ? " 206 Partial Content" : " 200 OK";
+                        string contentRange = !string.IsNullOrEmpty(range_header) ? $"Content-Range: bytes {startRange}-{endRange}/{fi.Length}\r\n" : "";
+
+                        SendHeader(sHttpVersion, sMimeType, bytesToSend, statusCode, ref mySocket, contentRange);
+                        Console.WriteLine("File Size: " + fi.Length);
+
+                        if (!is_head)
+                        {
+                            while (bytesToSend > 0 && (bytesRead = inputTempFile.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                if (bytesToSend < bytesRead)
+                                {
+                                    bytesRead = (int)bytesToSend; // Adjust the last read to the remaining bytes
+                                }
+                                SendToBrowser(buffer.Take(bytesRead).ToArray(), ref mySocket); // Ensure we send only the read bytes
+                                bytesToSend -= bytesRead;
+                                Console.WriteLine("Bytes Sent: " + bytesRead);
+                            }
+                        }
+
+                        Console.WriteLine("File Sent");
                         inputTempFile.Close();
                         mySocket.Close();
                     }
